@@ -3,7 +3,7 @@ Esse projeto se trata de um sistema de reconhecimento de entrada e saída de pes
 
 A lista de hardware utilizado foi:
 - Placa ESP32 DEVKIT1
-- 2 sensores HC-SR04
+- Sensor HC-SR04
 - Modulo Relé
 - Display LCD
 - Lampada LED
