@@ -1,5 +1,5 @@
 # objetosinteligentes
-Esse projeto se trata de um sistema de reconhecimento de entrada e saída de pessoas de um recinto, ao entrara é escrito num display uma mensagem de boas-vindas, é enviada uma mensagem via wi-fi para um aplicativo e se acendem as luzes do ambiente. Ao sair é mostrado uma mensagem de até breve, é enviada uma mensagem via wi-fi para um aplicativo, e caso o recinto esteja vazio as luzes são apagadas.
+Esse projeto se trata de um sistema de reconhecimento de entrada e saída de pessoas de um recinto, ao entrara é escrito num display uma mensagem de boas-vindas, é enviada uma mensagem via wi-fi para um aplicativo e se acendem as luzes do ambiente. Ao sair é mostrado uma mensagem de até breve, é enviada uma mensagem via wi-fi para um aplicativo, e caso o recinto esteja vazio as luzes são apagadas. Para a comunicação com o aplicativo, usou-se o protocolo MQTT
 
 A lista de hardware utilizado foi:
 - Placa ESP32 DEVKIT1
