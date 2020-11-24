@@ -1,5 +1,5 @@
-#include <WiFi.h>
-#include <PubSubClient.h>
+#include <WiFi.h> //biblioteca de uso do wifi no ESP32 (autenticação)
+#include <PubSubClient.h> //biblioteca do MQTT
 #include <iostream>
 #include <string>
 #include <Wire.h>
@@ -11,7 +11,7 @@ IPAddress subnet(255, 255, 255, 0);
 WiFiClient campainha;
 const char* ssid = "Gabriel-Lindo";
 const char* password = "999841155";
-const char* mqtt_server = "192, 168, 0, 115";
+const char* mqtt_server = "192.168.0.115";
 const char* mqtt_topic = "Alarme/feedback";
 const uint16_t mqtt_port = 1889;
 const char* mqtt_name = "campainha";
@@ -23,27 +23,30 @@ SSD1306Wire display(0x3c, SDA, SCL);
 int contadorEntrada = 0;
 int contadorSaida = 0;
 
-float cm, cm2,duracao;
+float cm, duracao, cm1, cm2;
 String buf;
 
-byte pinoTransmissor=32;
-byte pinoReceptor=33;
-byte pinoTransmissor2=34;
-byte pinoReceptor2=35;
+byte rele = 23;
+
+byte pinoTransmissor=32;// trig
+byte pinoReceptor=33;//echo
+
 
 
 PubSubClient client(campainha);
-
 String recebido, toprint, buff, lasttemp;
 double lastMsg, timeset;
 
 void checarwifi(){
   if(WiFi.status() != WL_CONNECTED) {
+        display.clear();
+    display.drawString(0, 0, "Wifi Desconectado!");
+    display.display();
     setup_wifi();
   }
 }
 
-void callback(char* topic, byte* message, unsigned int length) { 
+void callback(char* topic, byte* message, unsigned int length) {
   String messageTemp;
     for (int i = 0; i < length; i++) {
     messageTemp += (char)message[i];
@@ -58,10 +61,16 @@ void callback(char* topic, byte* message, unsigned int length) {
 void reconnect() {
   while (!client.connected()) {
     if (client.connect(mqtt_name)) {
+      display.clear();
+      display.drawString(0, 0, "MQTT conectado!");
+      display.display();
       client.subscribe(mqtt_topic);
       delay(2000);
     } else {
       checarwifi();
+      display.clear();
+      display.drawString(0, 0, "Erro ao conectar MQTT!");
+      display.display();
       client.setServer(mqtt_server, mqtt_port);
       client.setCallback(callback);
       delay(2500);
@@ -73,17 +82,22 @@ void reconnect() {
 void setup_wifi() {
 WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-
+        display.clear();
+    display.drawString(0, 0, "Conectando Wifi!");
+    display.display();
+    delay(5000);
   }
+      display.clear();
+    display.drawString(0, 0, "Wifi conectado!");
+    display.display();
 }
 
 void setup() {
 
   pinMode(pinoTransmissor, OUTPUT);
   pinMode(pinoReceptor, INPUT);
-  pinMode(pinoTransmissor2, OUTPUT);
-  pinMode(pinoReceptor2, INPUT);
+
+  pinMode(rele, OUTPUT);  
 
 
   Serial.begin(115200);
@@ -91,16 +105,17 @@ void setup() {
   
   display.init();
   display.flipScreenVertically();
-  display.setFont(ArialMT_Plain_10);
+  display.setFont(ArialMT_Plain_24);
   display.setTextAlignment(TEXT_ALIGN_LEFT);
-
+    display.clear();
+    display.drawString(0, 0, "iniciando wifi");
+    display.display();
+    delay(2000);
 setup_wifi();
 client.setServer(mqtt_server, mqtt_port);
 client.setCallback(callback);
-
-
-
 }
+
 
 
 void loop()
@@ -111,29 +126,38 @@ void loop()
 
   client.loop();
 
-
   cm =  distancia();
-  cm2 = distancia2();
-  if(cm >0 && cm<=200){
+  if(cm >0 && cm<=2){
+    cm1 = cm;
+    delay (10);
+    cm2 = cm;
+
+    if (cm1 >= cm2){
     display.clear();
-    display.drawString(0, 0, "Alguem entrou!");
+    display.drawString(0, 0, "Bem vindo!");
     display.display();
     client.publish("Alarme", "Alguem entrou!");
     contadorEntrada = contadorEntrada+1;
     buf = String (contadorEntrada);
     client.publish("Entrada", buf.c_str());
-    delay(1000);
-  }
-  else if (cm2 >0 && cm2<=200) {
+    checkrele();
+    delay(100);
     display.clear();
-    display.drawString(0, 0, "Alguem saiu!");
+    
+  } 
+  else{
+    display.clear();
+    display.drawString(0, 0, "Até breve!");
     display.display();
     client.publish("Alarme", "Alguem saiu!");
     contadorSaida = contadorSaida+1;
     buf = String (contadorSaida);
     client.publish("Saida", buf.c_str());
-    
-  }  
+    checkrele();
+    delay(100);
+    display.clear();
+  }
+  }
   
 }
 
@@ -152,17 +176,11 @@ float distancia()
   return calcDistancia;  
 }
 
-float distancia2()
-{  
-  digitalWrite(pinoTransmissor2, LOW);
-  delayMicroseconds(5); 
-  digitalWrite(pinoTransmissor2, HIGH); 
-  delayMicroseconds(10);
-  digitalWrite(pinoTransmissor2, LOW);
-  duracao = pulseIn(pinoReceptor2, HIGH);
-  float calcDistancia2= (duracao/2) * 0.0343;
-  if (calcDistancia2>=331){ // fora do limite do sensor
-      calcDistancia2=0;
+float checkrele(){
+  if (contadorEntrada == contadorSaida){
+     digitalWrite(rele,LOW);
   }
-  return calcDistancia2;  
+  else{
+    digitalWrite(rele, HIGH);
+  }
 }
